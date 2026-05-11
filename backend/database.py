@@ -1,10 +1,15 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from config.settings import settings
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
 
-client = AsyncIOMotorClient(settings.MONGO_URI)
+load_dotenv()
 
-database = client[settings.DATABASE_NAME]
+MONGO_URL = os.getenv("MONGO_URL")
 
-users_collection = database["users"]
-items_collection = database["items"]
-orders_collection = database["orders"]
+client = MongoClient(MONGO_URL)
+
+db = client["canteen_db"]
+
+users_collection = db["users"]
+items_collection = db["items"]
+orders_collection = db["orders"]

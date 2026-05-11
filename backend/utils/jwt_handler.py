@@ -1,7 +1,7 @@
-import os
 from jose import jwt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -16,6 +16,10 @@ def create_access_token(data: dict):
 
     to_encode.update({"exp": expire})
 
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode,
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
 
     return encoded_jwt
