@@ -3,14 +3,15 @@ venv/
 __pycache__/
 *.pyc
 
-# Node
-node_modules/
-
 # Environment
 .env
+
+# Node
+node_modules/
 
 # VS Code
 .vscode/
 
-# Build
+# Build files
 dist/
+build/
