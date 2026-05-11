@@ -13,3 +13,5 @@ db = client["canteen_db"]
 users_collection = db["users"]
 items_collection = db["items"]
 orders_collection = db["orders"]
+
+print("MongoDB Connected Successfully")
