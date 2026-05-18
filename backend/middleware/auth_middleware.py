@@ -1,65 +1,65 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
-from dotenv import load_dotenv
-from database import users_collection
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/login"
+)
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
-security = HTTPBearer()
 
-
+# =====================================
 # GET CURRENT USER
+# =====================================
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    token: str = Depends(oauth2_scheme)
 ):
-    token = credentials.credentials
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated"
+    )
 
     try:
+
         payload = jwt.decode(
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
 
-        email = payload.get("email")
+        email = payload.get("sub")
+        role = payload.get("role")
 
         if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
+            raise credentials_exception
 
-        user = users_collection.find_one({
-            "email": email
-        })
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
-            )
-
-        user["_id"] = str(user["_id"])
-
-        return user
+        return {
+            "email": email,
+            "role": role
+        }
 
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token is invalid or expired"
-        )
+        raise credentials_exception
 
 
-# ADMIN ONLY ACCESS
-def admin_required(current_user: dict = Depends(get_current_user)):
+# =====================================
+# ADMIN ACCESS ONLY
+# =====================================
+def admin_required(
+    current_user: dict = Depends(get_current_user)
+):
+
     if current_user["role"] != "admin":
+
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=403,
             detail="Admin access required"
         )
 

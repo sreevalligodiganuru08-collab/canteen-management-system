@@ -1,34 +1,28 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
+
 from database import items_collection
 from models.item_model import ItemCreate, ItemUpdate
-from middleware.auth_middleware import get_current_user
+from middleware.auth_middleware import admin_required
 
 router = APIRouter(
     prefix="/items",
     tags=["Items"]
 )
 
-# ==============================
+
+# ==========================================
 # ADD ITEM (ADMIN ONLY)
-# ==============================
-@router.post("/")
-def add_item(item: ItemCreate, current_user: dict = Depends(get_current_user)):
+# ==========================================
+@router.post("/add")
+def add_item(
+    item: ItemCreate,
+    admin: dict = Depends(admin_required)
+):
 
-    if current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can add items")
+    item_data = item.dict()
 
-    new_item = {
-        "name": item.name,
-        "price": item.price,
-        "quantity": item.quantity,
-        "category": item.category,
-        "image_path": item.image_path,
-        "description": item.description,
-        "available": True
-    }
-
-    result = items_collection.insert_one(new_item)
+    result = items_collection.insert_one(item_data)
 
     return {
         "message": "Item added successfully",
@@ -36,50 +30,26 @@ def add_item(item: ItemCreate, current_user: dict = Depends(get_current_user)):
     }
 
 
-# ==============================
+# ==========================================
 # GET ALL ITEMS
-# ==============================
+# ==========================================
 @router.get("/")
-def get_items(
-    search: str = Query(default=""),
-    category: str = Query(default="")
-):
+def get_all_items():
 
-    query = {}
+    items = []
 
-    # Search by name
-    if search:
-        query["name"] = {
-            "$regex": search,
-            "$options": "i"
-        }
+    for item in items_collection.find():
 
-    # Filter category
-    if category:
-        query["category"] = category
+        item["_id"] = str(item["_id"])
 
-    items = list(items_collection.find(query))
+        items.append(item)
 
-    formatted_items = []
-
-    for item in items:
-        formatted_items.append({
-            "id": str(item["_id"]),
-            "name": item["name"],
-            "price": item["price"],
-            "quantity": item["quantity"],
-            "category": item["category"],
-            "image_path": item.get("image_path", ""),
-            "description": item.get("description", ""),
-            "available": item.get("available", True)
-        })
-
-    return formatted_items
+    return items
 
 
-# ==============================
+# ==========================================
 # GET SINGLE ITEM
-# ==============================
+# ==========================================
 @router.get("/{item_id}")
 def get_single_item(item_id: str):
 
@@ -88,78 +58,62 @@ def get_single_item(item_id: str):
     })
 
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Item not found"
+        )
 
-    return {
-        "id": str(item["_id"]),
-        "name": item["name"],
-        "price": item["price"],
-        "quantity": item["quantity"],
-        "category": item["category"],
-        "image_path": item.get("image_path", ""),
-        "description": item.get("description", ""),
-        "available": item.get("available", True)
-    }
+    item["_id"] = str(item["_id"])
+
+    return item
 
 
-# ==============================
-# UPDATE ITEM
-# ==============================
-@router.put("/{item_id}")
+# ==========================================
+# UPDATE ITEM (ADMIN ONLY)
+# ==========================================
+@router.put("/update/{item_id}")
 def update_item(
     item_id: str,
-    item: ItemUpdate,
-    current_user: dict = Depends(get_current_user)
+    updated_data: ItemUpdate,
+    admin: dict = Depends(admin_required)
 ):
 
-    if current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can update items")
-
-    existing_item = items_collection.find_one({
-        "_id": ObjectId(item_id)
-    })
-
-    if not existing_item:
-        raise HTTPException(status_code=404, detail="Item not found")
-
-    updated_data = {
-        k: v
-        for k, v in item.dict().items()
-        if v is not None
-    }
-
-    items_collection.update_one(
+    result = items_collection.update_one(
         {"_id": ObjectId(item_id)},
-        {"$set": updated_data}
+        {
+            "$set": updated_data.dict(exclude_none=True)
+        }
     )
+
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Item not updated"
+        )
 
     return {
         "message": "Item updated successfully"
     }
 
 
-# ==============================
-# DELETE ITEM
-# ==============================
-@router.delete("/{item_id}")
+# ==========================================
+# DELETE ITEM (ADMIN ONLY)
+# ==========================================
+@router.delete("/delete/{item_id}")
 def delete_item(
     item_id: str,
-    current_user: dict = Depends(get_current_user)
+    admin: dict = Depends(admin_required)
 ):
 
-    if current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can delete items")
-
-    existing_item = items_collection.find_one({
+    result = items_collection.delete_one({
         "_id": ObjectId(item_id)
     })
 
-    if not existing_item:
-        raise HTTPException(status_code=404, detail="Item not found")
-
-    items_collection.delete_one({
-        "_id": ObjectId(item_id)
-    })
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Item not found"
+        )
 
     return {
         "message": "Item deleted successfully"
