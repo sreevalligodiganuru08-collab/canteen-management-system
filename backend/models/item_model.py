@@ -1,10 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
-# ==============================
-# CREATE ITEM MODEL
-# ==============================
 class ItemCreate(BaseModel):
     name: str
     price: float
@@ -13,10 +11,17 @@ class ItemCreate(BaseModel):
     image_path: str
     description: str
 
+    available: Optional[bool] = True
 
-# ==============================
-# UPDATE ITEM MODEL
-# ==============================
+    sold_count: Optional[int] = 0
+
+    low_stock_threshold: Optional[int] = 5
+
+    offer_percentage: Optional[float] = 0
+
+    created_at: Optional[datetime] = datetime.utcnow()
+
+
 class ItemUpdate(BaseModel):
     name: Optional[str] = None
     price: Optional[float] = None
@@ -24,4 +29,11 @@ class ItemUpdate(BaseModel):
     category: Optional[str] = None
     image_path: Optional[str] = None
     description: Optional[str] = None
+
     available: Optional[bool] = None
+
+    sold_count: Optional[int] = None
+
+    low_stock_threshold: Optional[int] = None
+
+    offer_percentage: Optional[float] = None

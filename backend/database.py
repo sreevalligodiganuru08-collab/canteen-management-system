@@ -14,13 +14,36 @@ db = client["canteen_management"]
 # =====================================
 # COLLECTIONS
 # =====================================
+
+# USERS
 users_collection = db["users"]
 
-items_collection = db["items"]
+# MENU ITEMS
+items_collection = db["menu"]
 
+# CART
 cart_collection = db["cart"]
 
+# ORDERS
 orders_collection = db["orders"]
+
+# PAYMENTS
+payments_collection = db["payments"]
+
+# DELIVERY PARTNERS
+delivery_collection = db["delivery"]
+
+# DELIVERY TRACKING
+delivery_tracking_collection = db["delivery_tracking"]
+
+# NOTIFICATIONS
+notifications_collection = db["notifications"]
+
+# OFFERS
+offers_collection = db["offers"]
+
+# COMBOS
+combos_collection = db["combos"]
 
 
 print("MongoDB Connected Successfully")

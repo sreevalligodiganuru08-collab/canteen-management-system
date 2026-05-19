@@ -4,16 +4,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from database import users_collection
 
 from models.user_model import (
-    UserSignup
+    UserRegister
 )
 
 from passlib.context import CryptContext
-from jose import jwt
 
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from utils.jwt_handler import create_access_token
 
 router = APIRouter(
     tags=["Authentication"]
@@ -23,9 +19,6 @@ pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
 
 
 # =====================================
@@ -54,7 +47,7 @@ def verify_password(
 # SIGNUP
 # =====================================
 @router.post("/signup")
-def signup(user: UserSignup):
+def signup(user: UserRegister):
 
     existing_email = users_collection.find_one({
         "email": user.email
@@ -87,7 +80,7 @@ def signup(user: UserSignup):
     users_collection.insert_one(user_dict)
 
     return {
-        "message": "User created successfully"
+        "message": "User registered successfully"
     }
 
 
@@ -123,17 +116,11 @@ def login(
             detail="Invalid credentials"
         )
 
-    # TOKEN DATA
-    token_data = {
+    # CREATE JWT TOKEN
+    token = create_access_token({
         "sub": user["email"],
         "role": user["role"]
-    }
-
-    token = jwt.encode(
-        token_data,
-        SECRET_KEY,
-        algorithm=ALGORITHM
-    )
+    })
 
     return {
 
@@ -142,8 +129,15 @@ def login(
         "token_type": "bearer",
 
         "user": {
+
             "name": user["name"],
+
             "email": user["email"],
-            "role": user["role"]
+
+            "role": user["role"],
+
+            "city": user.get("city", ""),
+
+            "area": user.get("area", "")
         }
     }

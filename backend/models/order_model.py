@@ -1,13 +1,9 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 
-# ==============================
-# ORDER ITEM
-# ==============================
 class OrderItem(BaseModel):
-
     item_id: str
     name: str
     price: float
@@ -16,27 +12,29 @@ class OrderItem(BaseModel):
     subtotal: float
 
 
-# ==============================
-# ORDER MODEL
-# ==============================
 class OrderModel(BaseModel):
-
     user_email: str
 
     items: List[OrderItem]
 
     total_amount: float
 
-    payment_method: str
+    status: Optional[str] = "Pending"
 
-    payment_status: str = "Pending"
+    payment_method: Optional[str] = "COD"
 
-    order_status: str = "Pending"
+    payment_status: Optional[str] = "Pending"
 
-    pickup_token: str
+    delivery_partner_email: Optional[str] = None
 
-    estimated_time: str
+    delivery_status: Optional[str] = "Waiting"
 
-    created_at: datetime = datetime.utcnow()
+    user_location: Optional[str] = ""
 
-    delivered_at: datetime = None
+    assigned_city: Optional[str] = ""
+
+    assigned_area: Optional[str] = ""
+
+    delivered_at: Optional[datetime] = None
+
+    created_at: Optional[datetime] = datetime.utcnow()

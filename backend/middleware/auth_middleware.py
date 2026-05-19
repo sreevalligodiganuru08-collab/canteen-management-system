@@ -1,29 +1,29 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-import os
-from dotenv import load_dotenv
+from jose import jwt, JWTError
 
-load_dotenv()
-
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/login"
-)
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
+from database import users_collection
+from config.security import SECRET_KEY, ALGORITHM
 
 
-# =====================================
+# ==============================
+# TOKEN SCHEMA
+# ==============================
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+
+
+# ==============================
 # GET CURRENT USER
-# =====================================
+# ==============================
+
 def get_current_user(
     token: str = Depends(oauth2_scheme)
 ):
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated"
+        detail="Could not validate credentials"
     )
 
     try:
@@ -35,23 +35,29 @@ def get_current_user(
         )
 
         email = payload.get("sub")
-        role = payload.get("role")
 
         if email is None:
             raise credentials_exception
 
-        return {
-            "email": email,
-            "role": role
-        }
-
     except JWTError:
         raise credentials_exception
 
+    user = users_collection.find_one({
+        "email": email
+    })
 
-# =====================================
-# ADMIN ACCESS ONLY
-# =====================================
+    if user is None:
+        raise credentials_exception
+
+    user["_id"] = str(user["_id"])
+
+    return user
+
+
+# ==============================
+# ADMIN REQUIRED
+# ==============================
+
 def admin_required(
     current_user: dict = Depends(get_current_user)
 ):
@@ -61,6 +67,42 @@ def admin_required(
         raise HTTPException(
             status_code=403,
             detail="Admin access required"
+        )
+
+    return current_user
+
+
+# ==============================
+# DELIVERY REQUIRED
+# ==============================
+
+def delivery_required(
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role"] != "delivery":
+
+        raise HTTPException(
+            status_code=403,
+            detail="Delivery access required"
+        )
+
+    return current_user
+
+
+# ==============================
+# CUSTOMER REQUIRED
+# ==============================
+
+def customer_required(
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role"] != "customer":
+
+        raise HTTPException(
+            status_code=403,
+            detail="Customer access required"
         )
 
     return current_user

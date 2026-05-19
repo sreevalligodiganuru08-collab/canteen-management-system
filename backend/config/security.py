@@ -11,11 +11,11 @@ load_dotenv()
 # ==============================
 # JWT CONFIG
 # ==============================
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(
-    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
-)
+SECRET_KEY = "canteen_super_secret_key"
+
+ALGORITHM = "HS256"
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 # ==============================
 # PASSWORD HASHING
